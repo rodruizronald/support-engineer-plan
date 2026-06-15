@@ -23,50 +23,28 @@ _Your answer:_
 
 _Your answer:_
 
-### Q5. What is physically different between an SSD and an HDD, and which one is in your machine?
-
-_Your answer:_
-
-### Q6. Order these fastest → slowest with rough orders of magnitude: CPU register, L1 cache, RAM, SSD, HDD, network round trip in one data center, network round trip across the internet. Why carry these numbers in your head?
+### Q5. Order these fastest → slowest with rough orders of magnitude: CPU register, L1 cache, RAM, SSD, HDD, network round trip in one data center, network round trip across the internet. Why carry these numbers in your head?
 
 _Your answer:_
 
 ## Part B — How a Python program uses that hardware
 
-### Q7. When you run `python script.py`, which of the four components get involved, and in what rough order?
+### Q6. When you run `python script.py`, which of the four components get involved, and in what rough order?
 
 _Your answer:_
 
-### Q8. When your script runs `x = 5`, where does the value live while the program runs? What about a list of a million numbers?
+### Q7. When your script runs `x = 5`, where does the value live while the program runs? What about a list of a million numbers?
 
 _Your answer:_
 
-### Q9. What happens to `x` when the script finishes or the machine reboots? How would you make the value survive, and where would it have to live?
+### Q8. What happens to `x` when the script finishes or the machine reboots? How would you make the value survive, and where would it have to live?
 
 _Your answer:_
 
-### Q10. Why does reading a 1 GB file from disk take far longer than looping over a list of the same size already in RAM?
+### Q9. Why does reading a 1 GB file from disk take far longer than looping over a list of the same size already in RAM?
 
 _Your answer:_
 
-### Q11. When a program "runs out of memory," what is filling up? What is the OS forced to do, and why might it kill the program?
-
-_Your answer:_
-
-### Q12. A single network request can take longer than millions of CPU operations. In terms of the components, what is your program waiting on?
-
-_Your answer:_
-
-## Part C — The support engineer's lens
-
-### Q13. What does a support engineer do day-to-day, and why does knowing how CPU, RAM, and disk behave help debug code you didn't write?
-
-_Your answer:_
-
-### Q14. A user reports "the app is slow." Using only the latency hierarchy, list likely causes most → least likely, and why each is plausible.
-
-_Your answer:_
-
-### Q15. Why are CPU load, free RAM, and free disk space the first three numbers a support engineer checks on a struggling machine?
+### Q10. A single network request can take longer than millions of CPU operations. In terms of the components, what is your program waiting on?
 
 _Your answer:_

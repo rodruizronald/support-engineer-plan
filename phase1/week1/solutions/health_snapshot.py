@@ -10,8 +10,8 @@ minute of triaging a slow machine:
   and one real network request, then print a table with the average time per
   operation and a "slowdown vs the fastest" column.
 
-This is the first artifact in your GitHub portfolio. See the week's README
-for the expected output format.
+This is the first artifact in your GitHub portfolio. See the Phase 1 README
+(Graduation Projects) for the expected output format.
 """
 
 # TODO: implement the mini-project.
