@@ -5,4 +5,4 @@ terminal with `python task1_hello.py`. Print a greeting and your name.
 """
 
 # TODO: implement this task.
-print("Task 1 — not implemented yet. Write your first script here!")
+print("Hello, my name is Hilary")
