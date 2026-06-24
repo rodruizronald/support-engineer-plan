@@ -25,7 +25,7 @@ Each week lives in its own folder (e.g., `week1/`): the plan in `README.md`, and
 ## The 6 Sub-Phases
 
 1. **Week 1:** [The Four Components and Their Speeds](week1/README.md).
-2. **Week 2:** Binary, Bytes, and How Data Is Represented.
+2. **Week 2:** [Binary, Bytes, and How Data Is Represented](week2/README.md).
 3. **Weeks 3–4:** Memory, Variables, and What Python Is Actually Doing.
 4. **Week 5:** The Operating System as Middleman.
 5. **Week 6:** Files, Paths, and I/O.
@@ -37,7 +37,7 @@ Each sub-phase ends with a mini-project: a small but functional Python program t
 
 **To pass Phase 1, complete one project for each of the six sub-phases.** By the end you'll have a portfolio of small tools — each one demonstrating a different layer of the machine — and proof that you can *apply* what you learned, not just answer questions about it.
 
-Projects are added here as each week is developed. So far only Week 1 is available; more weeks, and more options per week, will be filled in over time.
+Projects are added here as each week is developed. So far Weeks 1 and 2 are available; more weeks, and more options per week, will be filled in over time.
 
 ### Week 1 — The Four Components and Their Speeds
 
@@ -72,3 +72,42 @@ A note on honesty: a single memory operation (~50 ns) is far too fast to time on
 A skeleton is provided at `week1/solutions/health_snapshot.py`. The point is not perfect benchmarking; it's to *see* the latency hierarchy printed by your own code, about your own laptop. This becomes the first artifact in your GitHub portfolio — and the embryo of every "why is the server slow?" investigation you'll do later.
 
 **If you want to push further (optional):** add a `--watch` flag that reprints the machine section every few seconds, or save each run's results to a file so you can compare snapshots over time.
+
+### Week 2 — Binary, Bytes, and How Data Is Represented
+
+Pick one project to build. (More options will be added here over time — for now there is one.)
+
+#### Option A — `encoding-doctor`
+
+A small CLI tool that does what a support engineer does when a file shows up full of garbled characters: **look at the bytes and figure out how to read them.** Given a string (or a small file), it x-rays the data three ways. Tasks 1, 2, 3, and 6 give you the building blocks — number bases, characters-as-bytes, the encode/decode round-trip, and the hex dump — and this project joins them into one diagnostic tool.
+
+**Section 1 — What is this data.** Report the number of characters vs the number of bytes when encoded as UTF-8, whether every character is plain ASCII, and flag any non-ASCII characters with their Unicode code point. (Bonus, tying back to Q5: print the byte count in both KB and KiB so the units difference is concrete.)
+
+**Section 2 — Hex view.** Print a hexdump-style view of the first 16 bytes — an offset, the bytes as two hex digits each, and an ASCII gutter where printable characters show themselves and everything else shows as `.`.
+
+**Section 3 — Encoding sanity check.** Try decoding the bytes as ASCII, latin-1, and UTF-8, and report which succeed and which raise — so you can *see* why the same bytes look fine in one tool and garbled in another.
+
+Output should look roughly like:
+
+```
+=== What is this data ===
+Input    : "café 😀"
+Chars    : 6
+Bytes    : 10  (UTF-8)        0.010 KB / 0.0098 KiB
+ASCII    : no
+Non-ASCII: 'é' U+00E9, '😀' U+1F600
+
+=== Hex view (first 16 bytes) ===
+00000000  63 61 66 c3 a9 20 f0 9f 98 80                    caf.. ....
+
+=== Encoding sanity check ===
+ascii    : FAILED  — 'ascii' codec can't decode byte 0xc3 in position 3
+latin-1  : ok       — "cafÃ© ð\x9f\x98\x80"  (decodes, but wrong — mojibake)
+utf-8    : ok       — "café 😀"  (correct)
+```
+
+A note on what you're seeing: latin-1 *never* fails to decode — it maps all 256 byte values to characters — which is exactly why it produces silent garbage instead of an error. UTF-8 is stricter, so it either gives you the right text or tells you the bytes aren't valid UTF-8. That contrast is the whole lesson of the week, printed by your own code.
+
+A skeleton is provided at `week2/solutions/encoding_doctor.py`. The point isn't to reimplement `chardet`; it's to *see*, on data you choose, that bytes are just bytes until an encoding gives them meaning. This is the tool you'll mentally reach for every time a ticket says "the characters are all messed up."
+
+**If you want to push further (optional):** accept a real file path on the command line, auto-suggest the most likely encoding, or add a `--bytes N` flag to control how much of the hex view to print.
