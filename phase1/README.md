@@ -26,7 +26,7 @@ Each week lives in its own folder (e.g., `week1/`): the plan in `README.md`, and
 
 1. **Week 1:** [The Four Components and Their Speeds](week1/README.md).
 2. **Week 2:** [Binary, Bytes, and How Data Is Represented](week2/README.md).
-3. **Weeks 3–4:** Memory, Variables, and What Python Is Actually Doing.
+3. **Weeks 3–4:** Memory, Variables, and What Python Is Actually Doing — [Week 3: Names, Objects, and References](week3/README.md).
 4. **Week 5:** The Operating System as Middleman.
 5. **Week 6:** Files, Paths, and I/O.
 6. **Weeks 7–8:** Processes, the Shell, and Program Launch.
@@ -37,7 +37,7 @@ Each sub-phase ends with a mini-project: a small but functional Python program t
 
 **To pass Phase 1, complete one project for each of the six sub-phases.** By the end you'll have a portfolio of small tools — each one demonstrating a different layer of the machine — and proof that you can *apply* what you learned, not just answer questions about it.
 
-Projects are added here as each week is developed. So far Weeks 1 and 2 are available; more weeks, and more options per week, will be filled in over time.
+Projects are added here as each week is developed. So far Weeks 1, 2, and 3 are available; more weeks, and more options per week, will be filled in over time.
 
 ### Week 1 — The Four Components and Their Speeds
 
@@ -111,3 +111,48 @@ A note on what you're seeing: latin-1 *never* fails to decode — it maps all 25
 A skeleton is provided at `week2/solutions/encoding_doctor.py`. The point isn't to reimplement `chardet`; it's to *see*, on data you choose, that bytes are just bytes until an encoding gives them meaning. This is the tool you'll mentally reach for every time a ticket says "the characters are all messed up."
 
 **If you want to push further (optional):** accept a real file path on the command line, auto-suggest the most likely encoding, or add a `--bytes N` flag to control how much of the hex view to print.
+
+### Week 3 — Names, Objects, and References
+
+Pick one project to build. (More options will be added here over time — for now there is one.)
+
+#### Option A — `reference-detective`
+
+A small CLI tool that answers the question behind a whole family of tickets: **"I only touched one thing — why did something else change?"** Given a few names you bind to objects, it x-rays how Python actually holds them. Tasks 1, 2, 3, and 5 give you the building blocks — aliasing, `is` vs `==`, mutate-vs-rebind, and shallow-vs-deep copy — and this project joins them into one diagnostic tool.
+
+**Section 1 — Names & identity.** For each name, print its `id()` and refcount, then group the names that are **aliases** of the same object (same `id`) versus ones that are merely **equal but separate** (`==` is `True`, `is` is `False`).
+
+**Section 2 — Mutation blast radius.** Mutate one shared object exactly once and report every name whose value changed as a side effect — the aliasing "blast radius" made visible. This is the literal answer to "why did my other variable change?"
+
+**Section 3 — Copy comparison.** Take a nested structure, build a **shallow** copy and a **deep** copy, mutate a nested element in the original, and show which copy still shares it (changed) and which isolates it (unchanged) — proving a shallow copy only protects the top level.
+
+Output should look roughly like:
+
+```
+=== Names & identity ===
+Name    id            refs   group
+a       0x10a3f2c40   3      shared #1  (aliases: a, b)
+b       0x10a3f2c40   3      shared #1  (aliases: a, b)
+c       0x10a3f2e80   2      unique
+
+a == c ?  True    (equal contents)
+a is c ?  False   (different objects)
+
+=== Mutation blast radius ===
+Mutating a.append(99) ...
+Changed as a side effect : a, b   (they share one list)
+Unaffected               : c      (a separate object)
+
+=== Copy comparison ===
+Original       : [[1, 2], [3, 4]]
+Mutating original[0].append(99) ...
+                shares nested?   value now
+shallow copy    yes              [[1, 2, 99], [3, 4]]
+deep copy       no               [[1, 2], [3, 4]]
+```
+
+A note on what you're seeing: the shallow copy is a brand-new *outer* list, so replacing a whole element in the original wouldn't touch it — but its inner lists are the *same objects* as the original's, so mutating one of those bleeds straight through. A deep copy rebuilds the objects all the way down, which is why it stays isolated (and why it costs more time and memory). That contrast is the whole lesson of the week, printed by your own code.
+
+A skeleton is provided at `week3/solutions/reference_detective.py`. The point isn't to reimplement a debugger; it's to *see*, on names you choose, that assignment binds rather than copies — the reflex you'll reach for every time a ticket says "nothing else should have changed."
+
+**If you want to push further (optional):** add a section that runs a small operation in a loop and reports whether an object's refcount keeps climbing (a mini leak detector), or take the structure to inspect from a small config so you can point it at different shapes.
