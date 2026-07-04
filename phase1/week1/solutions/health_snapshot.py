@@ -15,4 +15,4 @@ This is the first artifact in your GitHub portfolio. See the Phase 1 README
 """
 
 # TODO: implement the mini-project.
-print("health-snapshot — not implemented yet. Build your machine report + speed demo here!")
+print("health-snapshot — not implemented yet. This feature will be developed when requested :)")
