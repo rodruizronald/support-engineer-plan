@@ -6,5 +6,16 @@ Goal: Python integers never overflow, so simulate a fixed-width unsigned
 snaps back to 0 — the same thing languages like C do silently.
 """
 
-# TODO: implement this task.
-print("Task 4 — not implemented yet. Wrap an 8-bit counter past 255 here!")
+# Starting value
+
+counter = 250                                           # Empezamos cerca del límite de un entero de 8 bits
+
+print("--- 8-bit Unsigned Counter ---")
+
+# Increase the counter several times
+
+for i in range(10):                                       # Repetimos el proceso 10 veces
+
+    print(f"Counter: {counter}")                          # Muestra el valor actual
+
+    counter = (counter + 1) % 256                         # Suma 1 y, si llega a 256, vuelve a 0

@@ -7,4 +7,54 @@ Watch mojibake happen and then get fixed.
 """
 
 # TODO: implement this task.
-print("Task 3 — not implemented yet. Break a decode, catch the error, then fix it here!")
+# Original text
+
+text = "café"                               # Texto con un carácter que NO pertenece a ASCII
+
+# Convert the text into bytes
+
+encoded_text = text.encode("utf-8")         # Convierte el texto a bytes usando "utf-8"
+
+print(" Original text ")
+print(text)
+
+print()
+
+print("  UTF-8 bytes ")
+print(encoded_text)                               # Muestra cómo se almacenan esos bytes
+
+print()
+
+# Try to decode using the wrong encoding
+
+print(" ---Trying ASCII ---")
+
+try:
+    wrong_text = encoded_text.decode("ascii")       # Intenta leer los bytes como ASCII (aquí fallará)
+    print(wrong_text) 
+
+except UnicodeDecodeError as error:                 # Captura el error sin que se detenga el programa
+    print("Error:", error)
+
+print("-" * 90)
+
+# Decode using the correct encoding
+
+correct_text = encoded_text.decode("utf-8")          # Lee los bytes usando la codificación correcta
+
+print(" Decoding with UTF-8 ")
+print(correct_text)
+
+print()
+
+# Mojibake
+
+print(" Mojibake example ")
+
+mojibake = "cafÃ©"                              # Así suele verse cuando UTF-8 se interpreta incorrectamente
+print(mojibake)
+
+print()
+
+print(" Correct text ")
+print(text)
