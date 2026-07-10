@@ -9,4 +9,4 @@ This task is optional — a stretch for when you want to go further.
 """
 
 # TODO: implement this task (optional).
-print("Task 6 (optional) — not implemented yet. Print a byte-by-byte hex dump here!")
+print(" :) ")
