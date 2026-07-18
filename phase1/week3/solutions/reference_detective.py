@@ -22,3 +22,5 @@ This is the third artifact in your GitHub portfolio. See the Phase 1 README
 
 # TODO: implement the mini-project.
 print("reference-detective — not implemented yet. Build your name/reference inspector here!")
+
+print("     :)") 
