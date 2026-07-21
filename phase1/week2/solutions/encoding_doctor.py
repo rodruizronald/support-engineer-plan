@@ -20,4 +20,4 @@ This is the second artifact in your GitHub portfolio. See the Phase 1 README
 """
 
 # TODO: implement the mini-project.
-print("encoding-doctor — not implemented yet. Build your byte/encoding inspector here!")
+print("    :)     ")
