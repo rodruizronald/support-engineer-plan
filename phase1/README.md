@@ -27,7 +27,7 @@ Each week lives in its own folder (e.g., `week1/`): the plan in `README.md`, and
 1. **Week 1:** [The Four Components and Their Speeds](week1/README.md).
 2. **Week 2:** [Binary, Bytes, and How Data Is Represented](week2/README.md).
 3. **Weeks 3–4:** Memory, Variables, and What Python Is Actually Doing — [Week 3: Names, Objects, and References](week3/README.md).
-4. **Week 5:** The Operating System as Middleman.
+4. **Week 5:** [The Operating System as Middleman](week5/README.md).
 5. **Week 6:** Files, Paths, and I/O.
 6. **Weeks 7–8:** Processes, the Shell, and Program Launch.
 
@@ -37,7 +37,7 @@ Each sub-phase ends with a mini-project: a small but functional Python program t
 
 **To pass Phase 1, complete one project for each of the six sub-phases.** By the end you'll have a portfolio of small tools — each one demonstrating a different layer of the machine — and proof that you can *apply* what you learned, not just answer questions about it.
 
-Projects are added here as each week is developed. So far Weeks 1, 2, and 3 are available; more weeks, and more options per week, will be filled in over time.
+Projects are added here as each week is developed. So far Weeks 1, 2, 3, and 5 are available; more weeks, and more options per week, will be filled in over time.
 
 ### Week 1 — The Four Components and Their Speeds
 
@@ -156,3 +156,47 @@ A note on what you're seeing: the shallow copy is a brand-new *outer* list, so r
 A skeleton is provided at `week3/solutions/reference_detective.py`. The point isn't to reimplement a debugger; it's to *see*, on names you choose, that assignment binds rather than copies — the reflex you'll reach for every time a ticket says "nothing else should have changed."
 
 **If you want to push further (optional):** add a section that runs a small operation in a loop and reports whether an object's refcount keeps climbing (a mini leak detector), or take the structure to inspect from a small config so you can point it at different shapes.
+
+### Week 5 — The Operating System as Middleman
+
+Pick one project to build. (More options will be added here over time — for now there is one.)
+
+#### Option A — `process-probe`
+
+A small CLI tool that does what a support engineer does when triaging a misbehaving service: **point at a process and ask the OS everything about it.** Given a PID (defaulting to the tool's own process), it x-rays the process three ways. Tasks 1, 2, 3, and 6 give you the building blocks — process identity, the process table, file descriptors, and child processes — and this project joins them into one diagnostic tool.
+
+**Section 1 — Identity & environment.** Using `os` and `psutil`, print the PID, the parent PID (and the parent's name), the process name, the user it runs as, its status, how long it has been running, and its working directory.
+
+**Section 2 — Resources it holds.** Print the process's memory (RSS/VMS), CPU percent, thread count, and number of open file descriptors — its footprint on the four components from Week 1.
+
+**Section 3 — In the context of this machine.** Print the overall system CPU percent, total/available RAM, and the load average, so you can see the one process against the whole box.
+
+Output should look roughly like:
+
+```
+=== Identity ===
+PID      : 48213
+PPID     : 48090  (parent: zsh)
+Name     : python3.12
+User     : rodruizronald
+Status   : running
+Started  : 2026-07-21 09:14:02  (up 0:03:12)
+CWD      : /Users/rodruizronald/workspace/private/support-engineer-plan
+
+=== Resources it holds ===
+Memory   : 18.4 MB RSS / 402.1 MB VMS
+CPU      : 0.3%
+Threads  : 3
+Open FDs : 7
+
+=== In the context of this machine ===
+System CPU   : 12.5% busy
+System RAM   : 16.0 GB total, 5.8 GB available
+Load average : 2.10, 1.85, 1.60  (1m, 5m, 15m)
+```
+
+A note on portability: some of these fields are OS-specific. `psutil.Process().num_fds()` and `os.getloadavg()` work on macOS and Linux but not plain Windows, so wrap the ones that might not exist in `try`/`except` and print `n/a` when they're missing — noticing *which* facts the OS will and won't tell you is part of the lesson. Your numbers will differ from the example and from run to run; that variation is the machine being honest, not a bug.
+
+A skeleton is provided at `week5/solutions/process_probe.py`. The point isn't to reimplement `top` or `ps`; it's to *see*, for a process you choose, the identity, resources, and context the OS is tracking on your behalf — the exact three questions you'll ask every time a ticket says "the service is using too much memory" or "the process won't die." This is the tool that turns Week 1's four components into something you can inspect live.
+
+**If you want to push further (optional):** accept a PID on the command line so you can probe *other* processes, add a `--children` flag that lists the target's child processes, or add a `--watch` flag that reprints Section 2 every few seconds so you can watch memory climb in real time.

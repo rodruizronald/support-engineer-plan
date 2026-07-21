@@ -1,0 +1,46 @@
+## Module 5 — Week 5: The Operating System as Middleman
+
+### Weekly Objective
+
+Internalize that your program **never touches the hardware directly** — it always asks the operating system, which sits between your code and the four components from Week 1 and arbitrates between every program competing for them. See, in your own running Python code, the OS doing its four big jobs: giving your program an identity (a **process**), handing out **memory**, brokering every piece of **I/O** through file descriptors, and using **signals** and **exit codes** to start and stop programs.
+
+### Brief Context
+
+Your Python program does not run *on* the hardware — it runs *on top of* the operating system, which runs on the hardware. When your code wants to read a file, allocate memory, or send a network packet, it cannot reach out and touch the disk or RAM itself. It runs in **user space**, walled off from the hardware, and must ask the **kernel** to do the privileged work on its behalf — a request called a **system call**. That wall is deliberate: it's what stops one buggy program from scribbling over another's memory or corrupting the disk, and it's why hundreds of programs can share one machine without stepping on each other. The OS is the middleman, and almost nothing interesting happens without going through it.
+
+What the OS manages maps neatly onto Week 1's four components. It turns each running program into a **process** — an isolated container with its own ID (PID), its own view of memory, and its own list of open files. It runs the **scheduler**, slicing the CPU's few cores into tiny time slices so that many processes *appear* to run at once. It runs **virtual memory**, so every process believes it owns all of RAM while the OS quietly maps those fake addresses to real ones and pages the excess out to disk when RAM runs low. And it brokers all **I/O** — every open file and network socket is a **file descriptor**, a small integer the kernel hands back so your program can refer to something only the kernel can actually touch.
+
+This is not academic: nearly every production incident is the OS telling you something. A process gets **OOM-killed** — the kernel ran out of RAM and picked a victim. The **load average** is high — too many processes are queued for the CPU. "**Too many open files**" — a service leaked file descriptors and hit its limit. Swap **thrashing** — RAM is exhausted and the OS is paging to disk, dragging everything down to Week 1's disk-latency floor. A container exits with **code 137** — it was `SIGKILL`ed (128 + 9). This week you learn to see the OS's fingerprints. It ties the phase together: your program's objects (Week 3) live in a process's virtual memory, made of bytes (Week 2), inside the RAM that the OS hands out and reclaims across the four components (Week 1).
+
+> **How to work through the week:** Answer the research questions in your own words first (write them in `solutions/answers.md`), then do the practical tasks (one script each, in `solutions/`). When you're ready, build this week's **graduation project** — see [Phase 1 → Graduation Projects](../README.md#graduation-projects). Theory loads the mental model; the code locks it in.
+
+### Research Questions
+
+Answer each in your own words in `solutions/answers.md`. Don't copy-paste definitions — explain them as if to a friend.
+
+#### Part A — The OS and what it manages
+
+1. What *is* an operating system, and what does "the OS is a middleman between your program and the hardware" actually mean? Give two concrete things your program cannot do on its own and must ask the OS to do for it.
+2. What's the difference between **user space** and **kernel space**, and what is a **system call**? Why does the divide exist (protection and isolation), and roughly what happens when your code calls something like `open()` — how does the request cross from your program into the kernel and back?
+3. What is a **process**? List the things the OS tracks about each one (PID, parent, memory, open files, state). How is a process different from a **program** (the file on disk) and from a **thread** (something inside a process)?
+4. A CPU has only a handful of cores, yet hundreds of processes seem to run at once. Explain how the **scheduler** creates that illusion (time-slicing and context switches). What is a machine's **load average** really measuring, and what does a load average well above your core count tell you?
+5. What is **virtual memory**, and why does each process get to act as if it owns all of RAM? What does the OS do when physical RAM runs out (**paging/swapping** to disk — tie this back to Week 1's latency hierarchy), and what is the **OOM killer**?
+
+#### Part B — How Python and your shell show you this
+
+6. Every running program is a process with an identity and an environment. How do you read your own **PID** and **parent PID** from Python (`os.getpid()`, `os.getppid()`), and your **environment variables** (`os.environ`)? Why do services get their configuration and secrets from the environment instead of hard-coding them?
+7. What is a **file descriptor**? When you `open()` a file (or a socket), what does the OS actually hand back, and why do long-running services hit "**Too many open files**"? How does closing files (the `with` statement) tie into this, and what is a descriptor **leak**?
+8. What is a **signal**? Explain `SIGINT` (Ctrl-C), `SIGTERM`, and `SIGKILL`. What's the difference between a **graceful shutdown** and being force-killed, why does `kill -9` skip your cleanup code, and how would you catch a signal in Python (the `signal` module)?
+9. What is an **exit code** (exit status)? What do `0` and non-zero mean, and how does the shell read the last one with `$?`? How do you set an exit code from Python (`sys.exit`) and read a child process's exit code? (Bonus: why does a container that was `SIGKILL`ed show exit code **137**?)
+10. *(Tie-back to Weeks 1–3.)* Put the whole phase together. Your program's objects (Week 3) live in a process's virtual memory, are made of bytes (Week 2), and sit in RAM the OS hands out across the four components (Week 1). Walk through, step by step, what the OS does from the moment you press Enter on `python script.py` to the moment the process exits — and name the exact points where the OS steps in when the program reads a file or runs out of memory.
+
+### Practical Tasks
+
+Each task is a separate, tiny Python file (think 5–20 lines). Run each one, look at the output, and write one sentence in your notes about what it showed you. Each task practices something from the questions above. **Task 6 is optional** — a stretch for when you want to go further.
+
+1. **Task 1 — Meet your process.** *(Practices Q3 and Q6.)* Use `os.getpid()` and `os.getppid()` to print your process's ID and its parent's, then print two or three environment variables from `os.environ` (like `USER`, `HOME`, `PATH`). Run the script twice and watch the PID change each time — a new process every run. **Concepts:** `os.getpid()`, `os.getppid()`, `os.environ`.
+2. **Task 2 — Read the process table.** *(Practices Q3 and Q4.)* Use `psutil` (installed in Week 1) to loop over `psutil.process_iter()` and print the PID, name, and memory of a handful of running processes — the OS's process table, seen from Python. Then print your *own* process's memory with `psutil.Process().memory_info().rss`. **Concepts:** `psutil.process_iter()`, `psutil.Process`, `.memory_info()`.
+3. **Task 3 — A file descriptor is just a number.** *(Practices Q7.)* Open a file and print its `.fileno()` — the integer the OS handed you. Open two or three more without closing them and watch the numbers climb. Then use a `with` block and confirm the descriptor is released when the block ends. See that "open files" are literally small integers the kernel tracks for you. **Concepts:** `open()`, `.fileno()`, `with`, file descriptors.
+4. **Task 4 — Catch a signal.** *(Practices Q8.)* Register a handler for `SIGINT` (Ctrl-C) with `signal.signal()`, then loop forever printing a heartbeat. When you press Ctrl-C, instead of the script dying instantly, your handler runs, prints a "shutting down gracefully…" message, and exits cleanly. This is the difference between `SIGTERM`/`SIGINT` (catchable) and `SIGKILL` (not). **Concepts:** `signal.signal()`, `SIGINT`, graceful shutdown, `sys.exit()`.
+5. **Task 5 — Exit codes.** *(Practices Q9.)* Write a script that exits with a code you choose via `sys.exit(3)`. Run it, then in the shell run `echo $?` to see the OS report that code. Then, from Python, launch a child with `subprocess.run([...])` and read its `.returncode`. See how a program tells whoever launched it whether it succeeded. **Concepts:** `sys.exit()`, `$?`, `subprocess.run()`, `.returncode`.
+6. **Task 6 — Spawn and reap a child process.** *(Optional — practices Q2 and Q3.)* Use `subprocess.Popen` to launch a second process (for example `["sleep", "1"]`, or another short Python command). Print your own PID and the child's `.pid`, call `.wait()` to block until it finishes, then print its `.returncode`. Watch the OS create a new process and hand you back its result. **Concepts:** `subprocess.Popen`, `.pid`, `.wait()`, `.returncode`.
