@@ -28,7 +28,7 @@ Each week lives in its own folder (e.g., `week1/`): the plan in `README.md`, and
 2. **Week 2:** [Binary, Bytes, and How Data Is Represented](week2/README.md).
 3. **Weeks 3–4:** Memory, Variables, and What Python Is Actually Doing — [Week 3: Names, Objects, and References](week3/README.md).
 4. **Week 5:** [The Operating System as Middleman](week5/README.md).
-5. **Week 6:** Files, Paths, and I/O.
+5. **Week 6:** [Files, Paths, and I/O](week6/README.md).
 6. **Weeks 7–8:** Processes, the Shell, and Program Launch.
 
 ## Graduation Projects
@@ -37,7 +37,7 @@ Each sub-phase ends with a mini-project: a small but functional Python program t
 
 **To pass Phase 1, complete one project for each of the six sub-phases.** By the end you'll have a portfolio of small tools — each one demonstrating a different layer of the machine — and proof that you can *apply* what you learned, not just answer questions about it.
 
-Projects are added here as each week is developed. So far Weeks 1, 2, 3, and 5 are available; more weeks, and more options per week, will be filled in over time.
+Projects are added here as each week is developed. So far Weeks 1, 2, 3, 5, and 6 are available; more weeks, and more options per week, will be filled in over time.
 
 ### Week 1 — The Four Components and Their Speeds
 
@@ -200,3 +200,50 @@ A note on portability: some of these fields are OS-specific. `psutil.Process().n
 A skeleton is provided at `week5/solutions/process_probe.py`. The point isn't to reimplement `top` or `ps`; it's to *see*, for a process you choose, the identity, resources, and context the OS is tracking on your behalf — the exact three questions you'll ask every time a ticket says "the service is using too much memory" or "the process won't die." This is the tool that turns Week 1's four components into something you can inspect live.
 
 **If you want to push further (optional):** accept a PID on the command line so you can probe *other* processes, add a `--children` flag that lists the target's child processes, or add a `--watch` flag that reprints Section 2 every few seconds so you can watch memory climb in real time.
+
+### Week 6 — Files, Paths, and I/O
+
+Pick one project to build. (More options will be added here over time — for now there is one.)
+
+#### Option A — `log-triage`
+
+A small CLI tool that does what a support engineer does in the first minute with a log file: **figure out what the file is, find out what's in it without loading it into RAM, and read the end of it.** Given a path to a log file, it reports three things. Tasks 1, 2, 3, 4, and 5 give you the building blocks — text vs bytes, `pathlib`, streaming reads, metadata, and I/O errors — and this project joins them into one triage tool.
+
+**Section 1 — What this file is.** Using `pathlib`, print the resolved absolute path, the size in both **MB and MiB** (Week 2's units difference, made concrete on a real file), the last modification time plus **how long ago** that was, and the permission bits.
+
+**Section 2 — What's inside (streamed).** Scan the file one line at a time and report the total line count, a count per log level (ERROR / WARN / INFO / DEBUG), the first and last timestamp seen, and the **peak memory used while scanning** — proving you can scan a file far bigger than the RAM you spend on it.
+
+**Section 3 — The last N lines.** Print a tail (default 10 lines). Keep it in a fixed-size `collections.deque(maxlen=N)` so memory stays flat no matter how big the file is.
+
+Output should look roughly like:
+
+```
+=== What this file is ===
+Path     : /Users/you/logs/app.log
+Size     : 4.812 MB / 4.589 MiB
+Modified : 2026-08-17 09:41:07  (3 minutes ago)
+Mode     : 644
+
+=== What's inside (streamed, never fully loaded) ===
+Lines    : 48,201
+ERROR    :    312
+WARN     :  1,004
+INFO     : 46,780
+DEBUG    :    105
+First ts : 2026-08-16 22:00:03
+Last ts  : 2026-08-17 09:41:06
+Peak RAM : 0.07 MB  (to scan a 4.8 MB file)
+
+=== Last 10 lines ===
+2026-08-17 09:40:58 INFO  request id=8821 status=200 in 43ms
+...
+2026-08-17 09:41:06 ERROR db connection refused (attempt 3/3)
+```
+
+A note on what you're seeing: the **Peak RAM** line is the whole point of the week. A `.read()` would have made that number roughly the size of the file; streaming line-by-line keeps it near zero, and the `deque` keeps the tail cheap too — so the same code works on a 5 MB log and a 5 GB one. Two other details worth getting right, because real logs are messier than test files: open the file with `errors="replace"` so one corrupt byte doesn't crash the whole scan with a `UnicodeDecodeError` (Week 2, arriving through `open()`), and wrap the open in `try`/`except` so a missing file or a permissions problem prints a clear message instead of a traceback.
+
+If you don't have a log file handy, generate one first — a short loop that writes a few hundred thousand timestamped lines with random levels gives you something realistic to point the tool at, and it doubles as practice for Task 3.
+
+A skeleton is provided at `week6/solutions/log_triage.py`. The point isn't to reimplement `tail` or `grep`; it's to *see* that you can answer real questions about a file bigger than your RAM by never holding more than one line of it at a time. This is the habit behind every "can you check the logs?" request you'll ever get, and it's the direct ancestor of the log work in Phase 3.
+
+**If you want to push further (optional):** add a `--grep PATTERN` flag that prints only matching lines (still streaming), a `--follow` flag that behaves like `tail -f` by watching for new lines appended to the end, or a histogram showing how many lines fall in each hour so you can spot the moment things went wrong.
