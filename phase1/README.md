@@ -29,7 +29,7 @@ Each week lives in its own folder (e.g., `week1/`): the plan in `README.md`, and
 3. **Weeks 3–4:** Memory, Variables, and What Python Is Actually Doing — [Week 3: Names, Objects, and References](week3/README.md).
 4. **Week 5:** [The Operating System as Middleman](week5/README.md).
 5. **Week 6:** [Files, Paths, and I/O](week6/README.md).
-6. **Weeks 7–8:** Processes, the Shell, and Program Launch.
+6. **Weeks 7–8:** [Processes, the Shell, and Program Launch](week7/README.md).
 
 ## Graduation Projects
 
@@ -37,7 +37,7 @@ Each sub-phase ends with a mini-project: a small but functional Python program t
 
 **To pass Phase 1, complete one project for each of the six sub-phases.** By the end you'll have a portfolio of small tools — each one demonstrating a different layer of the machine — and proof that you can *apply* what you learned, not just answer questions about it.
 
-Projects are added here as each week is developed. So far Weeks 1, 2, 3, 5, and 6 are available; more weeks, and more options per week, will be filled in over time.
+Projects are added here as each week is developed. All six sub-phases now have a project available; more options per week will be filled in over time.
 
 ### Week 1 — The Four Components and Their Speeds
 
@@ -247,3 +247,48 @@ If you don't have a log file handy, generate one first — a short loop that wri
 A skeleton is provided at `week6/solutions/log_triage.py`. The point isn't to reimplement `tail` or `grep`; it's to *see* that you can answer real questions about a file bigger than your RAM by never holding more than one line of it at a time. This is the habit behind every "can you check the logs?" request you'll ever get, and it's the direct ancestor of the log work in Phase 3.
 
 **If you want to push further (optional):** add a `--grep PATTERN` flag that prints only matching lines (still streaming), a `--follow` flag that behaves like `tail -f` by watching for new lines appended to the end, or a histogram showing how many lines fall in each hour so you can spot the moment things went wrong.
+### Weeks 7–8 — Processes, the Shell, and Program Launch
+
+Pick one project to build. (More options will be added here over time — for now there is one.)
+
+#### Option A — `step-runner`
+
+The capstone of Phase 1. A small CLI tool that does what every deploy script, CI job, and release checklist does: **run a list of commands in order and report honestly on what happened.** Tasks 2, 3, 4, and 5 give you the building blocks — PATH resolution, capturing a child's output and exit code, the safe list form, and keeping stdout and stderr apart — and this project joins them into one runner.
+
+**Section 1 — The plan.** For each step, resolve the program on `PATH` with `shutil.which()` and print where it will actually come from, *before running anything*. A step whose program can't be found gets reported now rather than halfway through — which is exactly the "command not found in cron" failure, caught early.
+
+**Section 2 — Execution.** Run each step with `subprocess.run()` using the **list form** (never `shell=True`), capturing stdout and stderr separately and timing each one. Print a live line per step with its exit code and duration, and echo the stderr of anything that fails. Stop at the first failure unless `--keep-going` is passed.
+
+**Section 3 — Summary.** A table of step / status / exit code / duration, the totals, and — the part that matters most — **the runner's own exit code**, which is `0` only if every step passed.
+
+Output should look roughly like:
+
+```
+=== The plan ===
+1  python --version                 -> /usr/local/bin/python3
+2  python -c "import psutil"        -> /usr/local/bin/python3
+3  python -c "raise SystemExit(1)"  -> /usr/local/bin/python3
+
+=== Execution ===
+[1/3] python --version                 ok       0.04s  exit 0   (out 15B, err 0B)
+[2/3] python -c "import psutil"        ok       0.11s  exit 0   (out 0B,  err 0B)
+[3/3] python -c "raise SystemExit(1)"  FAILED   0.03s  exit 1   (out 0B,  err 0B)
+
+=== Summary ===
+Step                                Status   Exit  Duration
+1  python --version                 ok          0     0.04s
+2  python -c "import psutil"        ok          0     0.11s
+3  python -c "raise SystemExit(1)"  FAILED      1     0.03s
+
+3 steps: 2 passed, 1 failed        total 0.18s
+Stopped at the first failure (pass --keep-going to run them all).
+step-runner exiting with code 1
+```
+
+A note on what you're seeing: the last line is the whole point of the week. A runner that prints "FAILED" but exits `0` is *lying to whatever launched it* — and that is precisely the bug behind "the pipeline was green but nothing deployed." Propagating a non-zero exit code is what lets a CI system, a `&&` chain, or a human's `echo $?` learn the truth. Two other details to get right, because they're the habits this module is trying to build: always use the **list form** so a step containing a `;` or a space is one literal argument instead of an injection (Task 4), and capture stdout and stderr **separately** so a failure's error message is still readable when its normal output is enormous (Task 5).
+
+Keep your example steps portable — `ls` and `grep` don't exist on Windows, so `python -c "..."` commands make the best test steps on any machine. Building the runner to take its steps from a small list in the file is fine; reading them from a file or the command line is a bonus, not the requirement.
+
+A skeleton is provided at `week7/solutions/step_runner.py`. The point isn't to reimplement `make` or GitHub Actions; it's to *be* the shell for a moment — resolving programs, launching processes, wiring up their streams, and honestly reporting the exit codes that come back. Finish this and you've closed Phase 1: you can trace a command from a line of text all the way down to the four components and back up through the exit code.
+
+**If you want to push further (optional):** add a `--timeout SECONDS` flag per step (`subprocess.run(timeout=...)`) so a hung step can't stall the whole run, read the step list from a small text or JSON file so the runner becomes reusable, or add `--env KEY=VALUE` to pass a modified environment to the children (Q9) without touching your own.
