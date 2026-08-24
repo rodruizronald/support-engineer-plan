@@ -6,5 +6,13 @@ parent's, then print two or three environment variables from os.environ
 time — a brand-new process every run.
 """
 
-# TODO: implement this task.
-print("Task 1 — not implemented yet. Print your PID, parent PID, and a few env vars here!")
+import os 
+
+print (" --Process Information-- ")
+print ("Process ID (PID):", os.getpid())
+print ("Parent Process ID (PPID):", os.getppid())
+
+print ("\n --Environment Variables--:")
+print ("- USERNAME:", os.environ.get("USERNAME"))
+print ("- USERPROFILE:", os.environ.get("USERPROFILE"))
+print ("- PATH:", os.environ.get("PATH"))
