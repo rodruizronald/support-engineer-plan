@@ -8,5 +8,72 @@ inside a try/except subprocess.CalledProcessError to watch Python turn a bad
 exit code into an exception.
 """
 
-# TODO: implement this task.
-print("Task 3 — not implemented yet. Capture a child's stdout, stderr, and exit code here!")
+
+import subprocess
+import sys
+
+
+print("--- SUCCESSFUL CHILD PROCESS ----")
+
+#ejecutamos otro Python como child process.
+successful_result = subprocess.run(
+    [
+        sys.executable,
+        "-c",
+        'import sys; print("Hello from stdout"); print("Hello from stderr", file=sys.stderr)'
+    ],
+    capture_output=True,
+    text=True
+)
+
+print("Return code:", successful_result.returncode)
+print("STDOUT:")
+print(successful_result.stdout)
+
+print("STDERR:")
+print(successful_result.stderr)
+
+
+print("--- FAILED CHILD PROCESS ---")
+
+# ejecutamos otro Python que termina intencionalmente con exit code 3.
+failed_result = subprocess.run(
+    [
+        sys.executable,
+        "-c",
+        'import sys; print("Something went wrong", file=sys.stderr); sys.exit(3)'
+    ],
+    capture_output=True,
+    text=True
+)
+
+print("Return code:", failed_result.returncode)
+print("STDOUT:")
+print(failed_result.stdout)
+
+print("STDERR:")
+print(failed_result.stderr)
+
+
+print("--- FAILED CHILD WITH check=True ---")
+
+try:
+    subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            'import sys; print("Something went wrong", file=sys.stderr); sys.exit(3)'
+        ],
+        capture_output=True,
+        text=True,
+        check=True
+    )
+
+except subprocess.CalledProcessError as error:
+    print("Caught CalledProcessError")
+    print("Return code:", error.returncode)
+    print("STDOUT:")
+    print(error.stdout)
+
+    print("STDERR:")
+    print(error.stderr)

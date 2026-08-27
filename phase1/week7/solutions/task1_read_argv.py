@@ -11,5 +11,9 @@ Watch the glob arrive as MANY arguments and the quoted string arrive as ONE —
 proof that the shell rewrote your command line before Python ever saw it.
 """
 
-# TODO: implement this task.
-print("Task 1 — not implemented yet. Print sys.argv here and run it three ways!")
+import sys
+
+print("Number of arguments:", len(sys.argv))
+
+for index, argument in enumerate(sys.argv):
+    print(index, argument)
