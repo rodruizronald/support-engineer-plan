@@ -61,7 +61,7 @@ Each week lives in its own folder (`week9/` through `week20/`): the plan in `REA
 
 ## The 11 Sub-Phases
 
-1. **Week 9:** The Network as Hardware — Packets, Addresses, and Ports.
+1. **Week 9:** [The Network as Hardware — Packets, Addresses, and Ports](week9/README.md).
 2. **Week 10:** DNS — Turning Names Into Addresses.
 3. **Weeks 11–12:** TCP and Sockets — What a Connection Actually Is.
 4. **Week 13:** HTTP/1.1 by Hand — The Plain-Text Protocol.
@@ -273,7 +273,57 @@ Each sub-phase ends with a mini-project: a small but functional program that tie
 
 **To pass Phase 2, complete one project for each of the eleven sub-phases.** The Week 20 capstone, `request-doctor`, is the phase's headline artifact: by the time you build it, every layer it inspects is one you have already probed by hand, and most of its sections are earlier projects grown up. Phase 1 left you a portfolio of tools that each explain one layer of a machine; Phase 2 leaves you a diagnostic kit for the request — the single most common thing a support engineer is handed and asked to explain.
 
-Full project specs are added to this section as each week is developed, matching how Phase 1 was built out. No weeks are written yet — this document is the layout.
+Projects are added here as each week is developed. So far Week 9 is available; more weeks, and more options per week, will be filled in over time.
+
+### Week 9 — The Network as Hardware
+
+Pick one project to build. (More options will be added here over time — for now there is one.)
+
+#### Option A — `net-snapshot`
+
+A small CLI tool that answers the first three questions a support engineer asks about a machine's place on the network: **what are its addresses**, **who is listening on it**, and **how far away is everything else.** Tasks 1, 2, 3, and 4 give you the building blocks — interfaces and MTUs, the private-vs-public address gap, bound ports and file descriptors, and honest round-trip timing — and this project joins them into one tool.
+
+**Section 1 — This machine on the network.** Using `psutil` and `socket`, print the hostname, then one line per active interface with its IPv4 address and netmask, MAC, and MTU. Then the three facts that tell you where this machine actually sits: the **default gateway**, the **source address** the OS would use to reach the internet (the UDP-connect trick from Task 2), and the **public address** the internet sees. When the last two differ, you are looking at NAT.
+
+**Section 2 — Who's listening here.** List every listening TCP port with the address it is bound to, and — the column that matters — whether that binding is **local-only** (`127.0.0.1`) or **reachable from the network** (`0.0.0.0`). This is the section that answers "the service is running but nothing can connect to it."
+
+**Section 3 — Where the time goes.** TCP round trips to four targets at increasing distance — loopback, your gateway, a nearby host, a distant one — as min/avg/max, with a slowdown column against Week 1's memory figure and the cost of **20 sequential** round trips at that average.
+
+Output should look roughly like:
+
+```
+=== This machine on the network ===
+Hostname : Ronalds-MacBook-Pro.local
+en0      : 192.168.1.24/24  mac 8c:85:90:1f:22:7d  mtu 1500   up
+lo0      : 127.0.0.1/8      mac n/a                mtu 16384  up
+Gateway  : 192.168.1.1  (via en0)
+Source   : 192.168.1.24  (the address the OS picks to reach the internet)
+Public   : 203.0.113.47  (what the internet sees — NAT in between)
+
+=== Who's listening here ===
+Address     Port   Reachable from           Process
+127.0.0.1   8099   this machine only        python3.12 (pid 48213)
+0.0.0.0     5000   anywhere on the network  python3.12 (pid 48310)
+*             22   anywhere on the network  n/a (needs sudo)
+
+=== Where the time goes ===
+Target                 RTT min/avg/max        vs memory     20 in a row
+loopback               0.09 / 0.11 / 0.14 ms      ~2,000x          2 ms
+gateway 192.168.1.1     3.1 / 4.4 / 9.5 ms       ~88,000x         88 ms
+example.com              74 / 78 / 86 ms      ~1,560,000x        1.56 s
+```
+
+A note on what you're seeing, and on honesty. Three of these choices are deliberate and worth understanding, because each one is a lesson:
+
+- **Round trips are measured with a TCP connect, not with `ping`.** ICMP needs no privileges here, measures what an *application* actually experiences, and — critically — is not filtered the way ICMP so often is. A gateway that ignores every `ping` you send will still complete a TCP handshake and still answer as traceroute's first hop. "No ping reply" is not "down," and a tool that concluded otherwise would lie to you.
+- **Names are resolved once, up front, and the timings connect to the IP.** Otherwise your first sample silently includes a DNS lookup and comes out two or three times too high. Week 10 times that lookup properly, as its own rung of the ladder.
+- **Section 2 will not be complete without `sudo`, and should say so.** On macOS, `psutil.net_connections()` raises `AccessDenied` for a non-root process; falling back to `lsof -nP -iTCP -sTCP:LISTEN` shows you your *own* processes and nothing else. Print `n/a (needs sudo)` rather than an empty row or a guess — noticing which facts the OS will and won't hand over is the same lesson Week 5 taught with `num_fds()`.
+
+Your numbers will differ from the example, and from run to run — on Wi-Fi, wildly. That variation is the network being honest, not a bug; it's also why the tool reports min/avg/max instead of a single number.
+
+A skeleton is provided at `week9/solutions/net_snapshot.py`. The point isn't to reimplement `ifconfig` and `ping`; it's to *see*, for your own machine, the three facts that every later week depends on — which addresses it has, which ports are exposed, and what a round trip costs. This is the first artifact of Phase 2 in your portfolio, and it's the direct ancestor of the `request-doctor` you build in Week 20: Section 3 is that tool's bottom two rungs.
+
+**If you want to push further (optional):** add a `--json` flag so two snapshots can be diffed (run it at home and at the office and compare), add a `--port N` check that reports whether a port is free *before* a service tries to bind it, or add a `--watch` flag that reprints Section 3 every few seconds so you can watch latency move while the network is busy.
 
 ## What Phase 2 Hands to Phase 3
 
