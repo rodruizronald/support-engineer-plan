@@ -10,7 +10,7 @@ Build the operator's mental model of the machine: CPU, RAM, disk, the operating 
 
 ### Phase 2 — Networking, HTTP, APIs, JSON (Weeks 9–20)
 
-Build deep fluency in the request/response model that powers nearly every production system. Cover IP and DNS, TCP, HTTP/1.1 as plain text, HTTPS and TLS, JSON, REST conventions, the `requests` library, authentication, and the core debugging toolkit (`curl`, `jq`, browser DevTools).
+Build deep fluency in the request/response model that powers nearly every production system. Cover IP and DNS, TCP, HTTP/1.1 as plain text, HTTPS and TLS, JSON, REST conventions, the `requests` library, authentication, and the core debugging toolkit (`curl`, `jq`, browser DevTools). See `phase2/README.md` for the detailed plan.
 
 ### Phase 3 — Linux, the Shell, and Production Realities (Weeks 21–33)
 
