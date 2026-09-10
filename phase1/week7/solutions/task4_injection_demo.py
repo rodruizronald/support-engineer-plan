@@ -32,5 +32,67 @@ shell am I actually handing this to?" is the question behind a lot of
 cross-platform breakage.
 """
 
-# TODO: implement this task.
-print("Task 4 — not implemented yet. Show the list form vs shell=True here!")
+import subprocess
+import sys
+from pathlib import Path
+
+
+# marcador de archivo para ver si el comando hostil se ejecutó
+marker_file = Path("INJECTED.txt")
+
+
+# eliminar el archivo marcador si ya existe, para que podamos ver si se crea de nuevo
+if marker_file.exists():
+    marker_file.unlink()
+
+
+#Windows version:
+# cmd.exe usa & como separador de comandos, no ;. Y no tiene touch, así que usamos type nul > INJECTED.txt
+untrusted = "hello & type nul > INJECTED.txt"
+
+
+print("--- PART A: LIST FORM ---")
+
+result = subprocess.run(
+    [
+        sys.executable,
+        "-c",
+        "import sys; print('arg =', repr(sys.argv[1]))",
+        untrusted
+    ],
+    capture_output=True,
+    text=True
+)
+
+print("Child output:")
+print(result.stdout.strip())
+
+print("INJECTED.txt exists:", marker_file.exists())
+
+
+print("\n--- PART B: shell=True ---")
+
+command = (
+    f'"{sys.executable}" -c '
+    f'"import sys; print(\'arg =\', repr(sys.argv[1]))" '
+    f'{untrusted}'
+)
+
+result = subprocess.run(
+    command,
+    shell=True,
+    capture_output=True,
+    text=True
+)
+
+print("Child output:")
+print(result.stdout.strip())
+
+print("INJECTED.txt exists:", marker_file.exists())
+
+
+#limpiar el archivo marcador al final para que podamos volver a ejecutar este script sin problemas
+if marker_file.exists():
+    marker_file.unlink()
+
+print("\nMarker file deleted.")

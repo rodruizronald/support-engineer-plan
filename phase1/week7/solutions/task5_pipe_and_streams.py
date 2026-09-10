@@ -16,5 +16,57 @@ Goal: two parts.
   the file.
 """
 
-# TODO: implement this task.
-print("Task 5 — not implemented yet. Wire two processes together, then split the streams!")
+import subprocess
+import sys
+
+
+print("--- PART A: PIPE BETWEEN TWO CHILD PROCESSES ---")
+
+# primer child:
+# imprime varias líneas a stdout.
+
+first_child = subprocess.Popen(
+    [
+        sys.executable,
+        "-c",
+        'print("INFO: started"); print("ERROR: something failed"); print("INFO: finished")'
+    ],
+    stdout=subprocess.PIPE,
+    text=True
+)
+
+
+# Second child:
+# lee de stdin y filtra solo las líneas que contienen "ERROR".  
+second_child = subprocess.Popen(
+    [
+        sys.executable,
+        "-c",
+        'import sys; [print(line, end="") for line in sys.stdin if "ERROR" in line]'
+    ],
+    stdin=first_child.stdout,
+    stdout=subprocess.PIPE,
+    text=True
+)
+
+
+# el primer child ya no necesita su stdout, así que lo cerramos para que el segundo child pueda recibir EOF.
+first_child.stdout.close()
+
+
+#leer la salida final del segundo child.
+final_output, _ = second_child.communicate()
+
+
+#esperar a que el primer child termine para evitar zombies.
+first_child.wait()
+
+
+print("Final result from the pipe:")
+print(final_output)
+
+
+print("--- PART B: STDOUT VS STDERR ---")
+
+print("This is a normal stdout line.")
+print("This is an error stderr line.", file=sys.stderr)
