@@ -7,5 +7,25 @@ and exits cleanly. This is the difference between SIGINT/SIGTERM (catchable)
 and SIGKILL (not).
 """
 
-# TODO: implement this task.
-print("Task 4 — not implemented yet. Catch Ctrl-C and shut down gracefully here!")
+
+import signal
+import sys
+import time
+
+
+#esta función se ejecuta cuando se recibe la señal SIGINT (Ctrl-C)
+def handle_sigint(signum, frame):
+    print("\nShutting down gracefully...")
+    sys.exit(0)
+
+
+#registramos la función handle_sigint como manejador de la señal SIGINT
+signal.signal(signal.SIGINT, handle_sigint)
+
+print("Program is running. Press Ctrl-C to stop.")
+
+
+#loop infinito que imprime un "latido" cada segundo
+while True:
+    print("Heartbeat...")
+    time.sleep(1)

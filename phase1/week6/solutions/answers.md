@@ -6,42 +6,44 @@ Answer each question below in your own words. Don't copy-paste definitions — e
 
 ### Q1. What is a file underneath ("a named sequence of bytes plus metadata")? What does the filesystem add on top of the raw disk from Week 1? What is a directory really, and why is a file extension a hint rather than a fact?
 
-_Your answer:_
+_Your answer: A file is basically a sequence of bytes stored together with metadata such as its name, size, modification time, owner, and permissions. The disk provides the physical storage, while the filesystem organizes that data and lets us find it using names, paths, and directories. A directory is not literally a box containing files, but a structure that associates names with files and other directories. An extension such as .txt, .jpg, or .py is only a hint about the type of content because changing the extension does not change the bytes inside the file._
 
 ### Q2. Absolute vs relative paths, and the current working directory: what's the difference? Why can a script that opens `config.yaml` work from your editor and fail under cron or in a container? What do `.`, `..`, `~`, and `/` vs `\` mean?
 
-_Your answer:_
+_Your answer: An absolute path describes the complete location of a file starting from the root of the system, while a relative path is interpreted from the current working directory. This is why config.yaml may work when I run a program from my editor but fail under cron or inside a container: the working directory may be different, so the program looks for the file somewhere else. . represents the current directory, .. represents the parent directory, and ~ usually represents the user's home directory. Linux and other Unix-like systems use / to separate parts of a path, while Windows normally uses \._
 
 ### Q3. Metadata vs contents: what does the OS track about each file (size, modification time, owner, permission bits) — the `ls -l` fields? Explain read/write/execute for user/group/other, what "Permission denied" is telling you, and why renaming a huge file is instant while copying it is slow.
 
-_Your answer:_
+_Your answer: Besides a file's contents, the operating system keeps metadata such as its size, modification time, owner, and permissions. Permissions specify who can read (r), write (w), or execute (x) the file and are divided into user, group, and others. A Permission denied error means that the operation I tried to perform is not allowed by my current permissions. Renaming a large file is usually almost instant because normally only filesystem information has to change, not all of the file's data. Copying it is much slower because its bytes have to be read and written into another copy._
 
 ### Q4. Buffering and the OS page cache: what are they and why do they exist (tie back to Week 1's latency hierarchy)? What's the difference between `flush()` and `fsync()`, what happens to buffered data when a process is `SIGKILL`ed (Week 5), and how can a reader catch a file half-written?
 
-_Your answer:_
+_Your answer: Buffering temporarily keeps data in memory before sending it to the operating system or device, while the OS page cache keeps recently used file data in RAM. Both exist because accessing RAM is much faster than accessing the disk. flush() sends data from the program's buffer to the operating system, while fsync() requests that the data be committed to persistent storage. If a process receives SIGKILL, it has no opportunity to perform its normal cleanup, so data that existed only in its own buffers can be lost. Also, if a program writes directly to a file while another program is reading it, the reader may see the file only partially written or in an inconsistent state._
 
 ### Q5. What happens to a running service when the disk fills up (`ENOSPC`)? Why does deleting a big log file sometimes not free the space until the process restarts (tie back to Week 5's file descriptors), and what is log rotation for?
 
-_Your answer:_
+_Your answer: When the disk becomes full, operations that need to write more data can fail with ENOSPC, meaning that there is no space left. This can prevent a service from writing logs, databases, or other files and can cause errors. On Unix-like systems, deleting a large file does not always free its space immediately if a process still has its file descriptor open; the name disappears from the directory, but the data remains until that reference is closed. Restarting the process normally closes the descriptor and allows the space to be freed. Log rotation prevents log files from growing forever by creating, renaming, compressing, or deleting older logs._
 
 ## Part B — How Python does file I/O
 
 ### Q6. Text mode vs binary mode in `open()`: what do the mode characters (`r`, `w`, `a`, `x`, `+`, `b`) do, and what exactly does `w` do to an existing file? Which mode gives `str` and which gives `bytes`, what does text mode silently do for you (Week 2 encodings, the `encoding=` argument), and when must you use binary?
 
-_Your answer:_
+_Your answer: The modes passed to open() describe how I want to use a file. r reads, w writes and first truncates existing contents, a appends data to the end, x creates a new file and fails if it already exists, + allows both reading and writing, and b selects binary mode. In text mode Python works with str and uses an encoding, which can be specified with encoding=, to convert between text and bytes. In binary mode Python works directly with bytes and does not perform that conversion. Binary mode is necessary for data that should not be interpreted as text, such as images, audio, and other binary formats._
 
 ### Q7. Why can `.read()` on a 4 GB file take down a service that handles it fine line-by-line? Compare `f.read()`, `for line in f:`, and `f.read(chunk_size)` by memory footprint — and using Weeks 1 and 3, explain why streaming is the default habit you want.
 
-_Your answer:_
+_Your answer: Calling f.read() without a limit tries to read the entire file into memory, so reading a 4 GB file can consume several gigabytes of RAM and make a service slow down or even fail. for line in f processes the file one line at a time, while f.read(chunk-size) processes it in limited-size chunks. These approaches keep much less content in memory at once. As we saw in Week 1, RAM is limited, and as we saw in Week 3, the objects Python creates occupy memory. This is why streaming and processing data gradually is usually a safer default habit for large files._
 
 ### Q8. Why prefer `pathlib` over gluing strings together? What does `Path` give you (`/`, `.name`, `.suffix`, `.parent`, `.exists()`, `.stat()`, `.resolve()`), and why does `Path(__file__).parent / "data.txt"` fix the "my script can't find its own data file" bug from Q2?
 
-_Your answer:_
+_Your answer: pathlib is preferable to manually joining path strings because it represents paths as objects and handles operating-system differences more safely. A Path object lets me join paths with / and provides properties and methods such as .name, .suffix, .parent, .exists(), .stat(), and .resolve(). Path(__file__).parent / "data.txt" gets the directory where the script itself is located and builds the path to data.txt from there. This avoids depending on the current working directory, so the script can find its data file even when it is run from another directory._
 
 ### Q9. What do `FileNotFoundError`, `PermissionError`, and `IsADirectoryError` each tell you about where to look? Why is wrapping `open()` in `try`/`except` preferred over checking `path.exists()` first, and what can change in the gap between the check and the open? Then explain the atomic write pattern (temp file + `os.replace()`) and what it protects a reader from.
 
-_Your answer:_
+_Your answer: FileNotFoundError means that the file or part of its path could not be found, PermissionError means that I do not have permission to perform the operation, and IsADirectoryError means that I tried to treat a directory like a file. It is better to attempt open() and handle these exceptions than to check .exists() first because the file's state can change between the check and the actual open. For example, another process could delete it during that small gap. For an atomic write, the complete data can first be written to a temporary file and then os.replace() can replace the original file. This lets other readers see either the old complete file or the new complete file instead of catching it half-written._
 
 ### Q10. (Tie-back to Weeks 1, 2, 3, and 5.) Trace `text = open("data.txt").read()` all the way down: the path resolved against the working directory, the system call and file descriptor (Week 5), the disk read and why it's the slow part (Week 1), the bytes and the decode (Week 2), and the `str` object now in RAM with a name bound to it (Week 3). Then name one realistic way each layer can fail.
 
-_Your answer:_
+_Your answer: When I run text = open("data.txt").read(), the relative path data.txt is first resolved using the current working directory. Python asks the operating system to open the file through a system call, and the OS returns a file descriptor representing the open file. Then, when .read() runs, the OS obtains the file's data, using storage and its cache when appropriate. Accessing the disk can be one of the slower parts because of the latency differences we learned about in Week 1. The stored data is made of bytes, as we saw in Week 2, and in text mode Python decodes those bytes using an encoding to create a str object. That object lives in the process's virtual memory and RAM, and the name text becomes bound to it, as we learned in Week 3._
+
+_Each layer can also fail: the path may be wrong, the OS may reject access because of permissions or a lack of file descriptors, the disk may have an I/O error, the bytes may not be valid for the selected encoding, and the process may run out of memory while creating the object._

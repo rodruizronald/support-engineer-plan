@@ -6,5 +6,14 @@ from Python, launch a child with subprocess.run([...]) and read its
 .returncode. See how a program tells whoever launched it whether it worked.
 """
 
-# TODO: implement this task.
-print("Task 5 — not implemented yet. Choose an exit code and read a child's returncode here!")
+
+import subprocess
+import sys 
+
+result = subprocess.run(
+    [sys.executable, "-c", "import sys; sys.exit(3)"]
+)
+
+print (f"Child process exit code:", result.returncode)
+
+sys.exit(3) 

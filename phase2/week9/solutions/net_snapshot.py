@@ -28,5 +28,3 @@ ancestor of the request-doctor you build in Week 20. See the Phase 2 README
 
 # TODO: implement the mini-project.
 print("net-snapshot — not implemented yet. Build your network snapshot tool here!")
-
-print( ":)" )

@@ -16,33 +16,6 @@ route print -4
 ```
 
 ```text
-===========================================================================
-ILista de interfaces
- 11...10 91 d1 ec d2 05 ......Microsoft Wi-Fi Direct Virtual Adapter
-  5...12 91 d1 ec d2 04 ......Microsoft Wi-Fi Direct Virtual Adapter #2
-  8...10 91 d1 ec d2 04 ......Killer(R) Wi-Fi 6E AX1675i 160MHz Wireless Network Adapter (211NGW)
-  1...........................Software Loopback Interface 1
-===========================================================================
-
-IPv4 Tabla de enrutamiento
-===========================================================================
-Rutas activas:
-Destino de red        M�scara de red   Puerta de enlace   Interfaz  M�trica
-          0.0.0.0          0.0.0.0     192.168.40.1   192.168.40.113     35
-        127.0.0.0        255.0.0.0      En v�nculo         127.0.0.1    331
-        127.0.0.1  255.255.255.255      En v�nculo         127.0.0.1    331
-  127.255.255.255  255.255.255.255      En v�nculo         127.0.0.1    331
-     192.168.40.0    255.255.255.0      En v�nculo    192.168.40.113    291
-   192.168.40.113  255.255.255.255      En v�nculo    192.168.40.113    291
-   192.168.40.255  255.255.255.255      En v�nculo    192.168.40.113    291
-        224.0.0.0        240.0.0.0      En v�nculo         127.0.0.1    331
-        224.0.0.0        240.0.0.0      En v�nculo    192.168.40.113    291
-  255.255.255.255  255.255.255.255      En v�nculo         127.0.0.1    331
-  255.255.255.255  255.255.255.255      En v�nculo    192.168.40.113    291
-===========================================================================
-Rutas persistentes:
-  Ninguno
-```
 
 **What it showed me:** _which row is the `default` route, what my gateway
 address is, and which interface packets leave by._

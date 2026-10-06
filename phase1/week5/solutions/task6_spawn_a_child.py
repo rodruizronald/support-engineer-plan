@@ -8,5 +8,26 @@ child's .pid, call .wait() to block until it finishes, then print its
 This task is optional — a stretch for when you want to go further.
 """
 
-# TODO: implement this task (optional).
-print("Task 6 (optional) — not implemented yet. Spawn a child process and reap its exit code here!")
+
+import os
+import subprocess
+import sys
+
+
+#(proceso padre)
+print("Parent PID:", os.getpid())
+
+
+#se crea un nuevo proceso (proceso hijo)
+child = subprocess.Popen(
+    [sys.executable, "-c", "import time; time.sleep(1)"]
+)
+
+
+print("Child PID:", child.pid)
+
+#esperamos a que el proceso hijo termine
+child.wait()
+
+
+print("Child return code:", child.returncode)
