@@ -19,4 +19,11 @@ this script and read the error you get.
 """
 
 # TODO: implement this task.
-print("Task 3 — not implemented yet. Bind a port and go find it in the OS's tables!")
+import socket
+
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
+    server.bind(("127.0.0.1", 8099))
+    server.listen()
+    print("Address:", server.getsockname())
+    print("File descriptor:", server.fileno())
+    input("Press Enter to release the port... ")
