@@ -16,4 +16,22 @@ rather than quirks:
 """
 
 # TODO: implement this task.
-print("Task 1 — not implemented yet. List this machine's interfaces and addresses here!")
+import socket
+import psutil
+
+addresses = psutil.net_if_addrs()
+stats = psutil.net_if_stats()
+
+for name, items in addresses.items():
+    print("\nInterface:", name)
+    for address in items:
+        if address.family == psutil.AF_LINK:
+            print("MAC:", address.address)
+        elif address.family == socket.AF_INET:
+            print("IPv4:", address.address, "Netmask:", address.netmask)
+        elif address.family == socket.AF_INET6:
+            print("IPv6:", address.address)
+    if name in stats:
+        print("Up:", stats[name].isup)
+        print("MTU:", stats[name].mtu)
+        print("Speed:", stats[name].speed, "Mbps")

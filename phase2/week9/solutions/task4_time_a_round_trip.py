@@ -19,4 +19,24 @@ Two things to look for:
 """
 
 # TODO: implement this task.
-print("Task 4 — not implemented yet. Measure a real round trip here!")
+import socket
+import time
+
+for label in ("nearby", "distant"):
+    host = input(f"Enter a {label} hostname: ").strip()
+    try:
+        ip = socket.getaddrinfo(host, 443, socket.AF_INET, socket.SOCK_STREAM)[0][4][0]
+        print("IP:", ip)
+        times = []
+        for attempt in range(5):
+            start = time.perf_counter()
+            with socket.create_connection((ip, 443), timeout=2):
+                elapsed = (time.perf_counter() - start) * 1000
+            times.append(elapsed)
+        average = sum(times) / len(times)
+        print(f"Min: {min(times):.2f} ms")
+        print(f"Average: {average:.2f} ms")
+        print(f"Max: {max(times):.2f} ms")
+        print(f"20 connections: {average * 20 / 1000:.2f} seconds")
+    except OSError as error:
+        print("Connection error:", error)

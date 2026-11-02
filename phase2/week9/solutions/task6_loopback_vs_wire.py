@@ -17,4 +17,44 @@ Goal: two parts.
 """
 
 # TODO: implement this task.
-print("Task 6 — not implemented yet. Watch the counters, then send a packet into the void!")
+import socket
+import urllib.request
+import psutil
+
+for target in ("Internet", "Loopback"):
+    before = psutil.net_io_counters(pernic=True)
+    try:
+        if target == "Internet":
+            with urllib.request.urlopen("https://example.com", timeout=5) as response:
+                response.read()
+        else:
+            with socket.create_connection(("127.0.0.1", 8099), timeout=2) as connection:
+                connection.sendall(b"hello" * 1000)
+    except OSError as error:
+        print(target, "error:", error)
+    after = psutil.net_io_counters(pernic=True)
+    print("\n", target)
+    for name in before:
+        if name in after:
+            sent = after[name].bytes_sent - before[name].bytes_sent
+            received = after[name].bytes_recv - before[name].bytes_recv
+            print(name, "Sent:", sent, "Received:", received)
+
+with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as connection:
+    connection.bind(("127.0.0.1", 0))
+    unused_port = connection.getsockname()[1]
+
+with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as connection:
+    connection.settimeout(1)
+    connection.connect(("127.0.0.1", unused_port))
+    print("\nUDP sent:", connection.send(b"hello"))
+    try:
+        print("UDP reply:", connection.recv(1024))
+    except OSError as error:
+        print("UDP receive:", error)
+
+try:
+    with socket.create_connection(("127.0.0.1", unused_port), timeout=1):
+        print("TCP connected")
+except OSError as error:
+    print("TCP connection:", error)

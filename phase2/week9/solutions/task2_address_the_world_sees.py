@@ -17,4 +17,20 @@ Goal: three short parts.
 """
 
 # TODO: implement this task.
-print("Task 2 — not implemented yet. Compare your private address with your public one here!")
+import socket
+import urllib.request
+
+with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as connection:
+    connection.connect(("8.8.8.8", 80))
+    print("Local IP and port:", connection.getsockname())
+
+try:
+    with urllib.request.urlopen("https://api.ipify.org", timeout=5) as response:
+        print("Public IP:", response.read().decode())
+except OSError as error:
+    print("Public IP error:", error)
+
+try:
+    print("Hostname IP:", socket.gethostbyname(socket.gethostname()))
+except socket.gaierror as error:
+    print("Hostname error:", error)
