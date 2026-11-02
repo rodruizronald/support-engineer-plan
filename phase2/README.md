@@ -53,7 +53,7 @@ Each week lives in its own folder (`week9/` through `week20/`): the plan in `REA
 
 ## Practice Targets and Setup
 
-**One-time setup.** Command line: `curl`, `dig`, `openssl`, `nc`, `traceroute`, `lsof` (mostly preinstalled on macOS), plus `jq` (`brew install jq`) and optionally `mtr` and `mitmproxy`. Python: `requests` (Week 17), plus a minimal server framework such as `flask` (Week 11 onward); `psutil` carries over from Phase 1.
+**One-time setup.** Command line: `curl`, `dig`, `openssl`, `nc`, `traceroute`, `lsof` (mostly preinstalled on macOS), plus `jq` (`brew install jq`) and optionally `mtr` and `mitmproxy`. Python: `dnspython` (Week 10), `requests` (Week 17), plus a minimal server framework such as `flask` (Week 11 onward); `psutil` carries over from Phase 1.
 
 **Targets, in order of preference.** (1) **Local servers the learner runs** — the only safe place to induce failures, and the default for Weeks 11–16. (2) **Public echo services** — `httpbin.org`, `postman-echo.com` — for status codes, redirects, headers, and auth schemes on demand. (3) **One real API, used across Weeks 17–19** — the GitHub REST API is the recommended choice: it is free, read-only-safe, documented, and it exercises pagination, rate limits with real headers, conditional requests with ETags, and token auth, so the same API keeps paying off for three weeks.
 
@@ -62,7 +62,7 @@ Each week lives in its own folder (`week9/` through `week20/`): the plan in `REA
 ## The 11 Sub-Phases
 
 1. **Week 9:** [The Network as Hardware — Packets, Addresses, and Ports](week9/README.md).
-2. **Week 10:** DNS — Turning Names Into Addresses.
+2. **Week 10:** [DNS — Turning Names Into Addresses](week10/README.md).
 3. **Weeks 11–12:** TCP and Sockets — What a Connection Actually Is.
 4. **Week 13:** HTTP/1.1 by Hand — The Plain-Text Protocol.
 5. **Week 14:** HTTP Semantics — Methods, Status Codes, Headers, and Redirects.
@@ -273,7 +273,7 @@ Each sub-phase ends with a mini-project: a small but functional program that tie
 
 **To pass Phase 2, complete one project for each of the eleven sub-phases.** The Week 20 capstone, `request-doctor`, is the phase's headline artifact: by the time you build it, every layer it inspects is one you have already probed by hand, and most of its sections are earlier projects grown up. Phase 1 left you a portfolio of tools that each explain one layer of a machine; Phase 2 leaves you a diagnostic kit for the request — the single most common thing a support engineer is handed and asked to explain.
 
-Projects are added here as each week is developed. So far Week 9 is available; more weeks, and more options per week, will be filled in over time.
+Projects are added here as each week is developed. So far Weeks 9 and 10 are available; more weeks, and more options per week, will be filled in over time.
 
 ### Week 9 — The Network as Hardware
 
@@ -324,6 +324,77 @@ Your numbers will differ from the example, and from run to run — on Wi-Fi, wil
 A skeleton is provided at `week9/solutions/net_snapshot.py`. The point isn't to reimplement `ifconfig` and `ping`; it's to *see*, for your own machine, the three facts that every later week depends on — which addresses it has, which ports are exposed, and what a round trip costs. This is the first artifact of Phase 2 in your portfolio, and it's the direct ancestor of the `request-doctor` you build in Week 20: Section 3 is that tool's bottom two rungs.
 
 **If you want to push further (optional):** add a `--json` flag so two snapshots can be diffed (run it at home and at the office and compare), add a `--port N` check that reports whether a port is free *before* a service tries to bind it, or add a `--watch` flag that reprints Section 3 every few seconds so you can watch latency move while the network is busy.
+
+### Week 10 — DNS
+
+Pick one project to build. (More options will be added here over time; for now there is one.)
+
+#### Option A — `dns-doctor`
+
+A small CLI tool that takes a name and answers the four questions behind every "is it DNS?" ticket: **what does it resolve to**, **according to whom**, **for how long**, and **do they agree**. Tasks 1, 2, 4, and 5 give you the building blocks: the application's view next to DNS's view, honest lookup timing, per-resolver TTLs, and every failure shape named. This project joins them into one tool.
+
+**Section 1 — What your application gets.** Call `socket.getaddrinfo()` and print the unique addresses and how long the call took. This is what any program on this machine will actually connect to. Then check the hosts file for the name. If it's listed, say so loudly: DNS is not even being asked, and nothing in Sections 2 and 3 applies to this machine.
+
+**Section 2 — The records.** Against the system resolver, follow the **CNAME chain** hop by hop, printing each alias with its TTL, until you reach a name with addresses. Then print the A, AAAA, MX, TXT, and NS records with their TTLs, or `(none)` when the name exists but holds no record of that type. NODATA is an answer, not an error.
+
+**Section 3 — Do the resolvers agree?** Ask the system resolver, `8.8.8.8`, and `1.1.1.1` for A records, and print one row each: addresses, TTL, and time. End with a one-line **verdict**. Every failure (NXDOMAIN, NODATA, SERVFAIL, timeout) is a row with its shape named, never a traceback.
+
+Output should look roughly like:
+
+```
+$ python dns_doctor.py shop.example.com
+
+=== What your application gets ===
+getaddrinfo : 203.0.113.10, 203.0.113.11   (38.4 ms)
+hosts file  : not listed, so this answer came from DNS
+
+=== Records (system resolver 192.168.1.1) ===
+chain : shop.example.com
+        -> CNAME shop.example.com.cdn.example.net   ttl 3600
+        -> CNAME edge-7.cdn.example.net             ttl 300
+A     : 203.0.113.10, 203.0.113.11                  ttl 20
+AAAA  : (none: the name exists, but has no IPv6 records)
+MX    : (none)
+TXT   : (none)
+NS    : (none)
+
+=== Do the resolvers agree? ===
+Resolver   Answer                        TTL      Time
+system     203.0.113.10, 203.0.113.11     20    4.8 ms
+8.8.8.8    198.51.100.7                   17   71.2 ms
+1.1.1.1    203.0.113.10, 203.0.113.11     20   63.0 ms
+
+Verdict: every resolver answered, with different addresses. That's typical
+of a CDN steering by resolver location, not a fault.
+```
+
+And for a name whose DNSSEC is broken, Section 3 should look more like this:
+
+```
+=== Do the resolvers agree? ===
+Resolver   Answer                        TTL      Time
+system     192.0.2.44                    300   21.6 ms
+8.8.8.8    SERVFAIL                        -  144.0 ms
+1.1.1.1    SERVFAIL                        -   63.1 ms
+
+Verdict: resolvers disagree about whether this name can be answered at all.
+Two validating resolvers refuse it (SERVFAIL) while the system resolver
+answers: suspect DNSSEC on the authoritative side, and a system resolver
+that isn't validating.
+```
+
+A note on what you're seeing, and on honesty. Four of these choices are deliberate and worth understanding, because each one is a lesson:
+
+- **Different answers are not wrong answers.** CDNs pick an address based on where the *resolver* is, and big sites rotate through pools of addresses, so three resolvers giving three addresses is normal. The disagreement that matters is when one resolver *fails* while another answers, or when they disagree about whether the name exists at all. That points at a resolver or a broken zone, not at the name. Your verdict has to tell those cases apart, or it will raise false alarms on every CDN-hosted site.
+- **A TTL is a countdown, not a setting.** What a resolver reports is the time left in *its* cache. Two resolvers showing 20 and 17 aren't configured differently; they fetched the record at different moments. The record's real TTL comes only from the authoritative server (see `--authoritative` below).
+- **Section 1 and Sections 2–3 ask different questions, and can legitimately disagree.** `getaddrinfo()` runs the OS's whole policy: hosts file, OS cache, search domains, and AAAA only if the machine has IPv6. dnspython's "system resolver" talks straight to the configured nameserver and skips all of that. When the two differ, Section 1 is what the application will connect to, and the tool should say so.
+- **Failures are fast or slow, and the tool should show which.** Set `lifetime` so a dead resolver costs two seconds, not thirty, and print the time on failure rows too. An NXDOMAIN in 20 ms is an answer. A timeout at exactly your limit is silence.
+
+Your addresses and timings will differ from the example, and from run to run; the example uses documentation-range addresses (`192.0.2.x`, `198.51.100.x`, `203.0.113.x`) rather than real ones. That variation is the system working as designed, not a bug: caches expire, CDNs rebalance, and resolvers sit in different places.
+
+A skeleton is provided at `week10/solutions/dns_doctor.py`. The point isn't to reimplement `dig`. It's to have one command you can run during a ticket that answers "resolved by what, from where, and when?", and to see for yourself that "DNS is fine" was never a single fact. Section 2 is the DNS rung of the `request-doctor` you build in Week 20.
+
+**If you want to push further (optional):** add `--authoritative`, which looks up the zone's NS records and asks one of those servers directly with recursion off, so the record's *real* TTL prints next to the cached countdowns. Or add `--trace`, which starts at a root server and follows each referral down with non-recursive queries (`dns.message.make_query()`, clear the RD flag, send with `dns.query.udp()`), printing every hop the way `dig +trace` does. Or add `--watch N`, which re-queries every N seconds so you can watch TTLs tick down and an address flip when a cache expires. That's the closest you'll get to watching "propagation" happen.
 
 ## What Phase 2 Hands to Phase 3
 
