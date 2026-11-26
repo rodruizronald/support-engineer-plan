@@ -35,4 +35,40 @@ Two more things to notice:
 """
 
 # TODO: implement this task.
-print("Task 5 — not implemented yet. Break DNS four different ways!")
+import socket
+import time
+import dns.resolver
+import dns.exception
+
+cases = [
+    ("does-not-exist.python.org", "A", "8.8.8.8"),
+    ("github.com", "AAAA", "8.8.8.8"),
+    ("dnssec-failed.org", "A", "8.8.8.8"),
+    ("example.com", "A", "192.0.2.1"),
+    ("does-not-exist.example.com", "A", "8.8.8.8"),
+]
+
+for name, record_type, server in cases:
+    resolver = dns.resolver.Resolver(configure=False)
+    resolver.nameservers = [server]
+    resolver.lifetime = 2
+    start = time.perf_counter()
+    try:
+        answer = resolver.resolve(name, record_type)
+        result = [str(record) for record in answer]
+    except dns.exception.DNSException as error:
+        result = type(error).__name__ + ": " + str(error)
+    elapsed = (time.perf_counter() - start) * 1000
+    print(name, record_type, server, result, f"{elapsed:.2f} ms")
+
+print("\nSystem resolver:")
+for name in ("does-not-exist.python.org", "github.com", "dnssec-failed.org"):
+    start = time.perf_counter()
+    try:
+        addresses = socket.getaddrinfo(name, 443)
+        print(name, sorted({item[4][0] for item in addresses}))
+    except socket.gaierror as error:
+        print(name, "errno:", error.errno, "message:", error.strerror)
+    print(f"Time: {(time.perf_counter() - start) * 1000:.2f} ms")
+
+# I learned that a missing name is different from a DNS server that does not answer.

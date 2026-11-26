@@ -6,42 +6,52 @@ Answer each question below in your own words. Don't copy-paste definitions; expl
 
 ### Q1. Why does DNS exist, and why is it a distributed hierarchy instead of one big file (`HOSTS.TXT`)? Read `www.github.com.` right to left and name the root, the TLD, and the domain. What is a zone, what does delegation mean, and what makes a server authoritative for a name?
 
-_Your answer:_
+_Answer: DNS lets us use names like `github.com` instead of remembering IP addresses. One big file would be too hard to keep updated, so different servers share the work. In `www.github.com.`, the final dot is the root, `com` is the TLD, `github.com` is the domain, and `www` is a name inside it. A zone is a part of DNS managed together. Delegation means handing responsibility for part of it to other servers. An authoritative server has the official records for its zone._
 
 ### Q2. Walk the resolver chain: stub resolver → recursive resolver → root → TLD → authoritative. Who does the walking, what's the difference between a recursive and an iterative query, and at which steps can a cache answer instead? Why does almost no lookup ever reach a root server, and why does DNS normally travel over UDP (with TCP as a fallback)?
 
-_Your answer:_
+_Answer: My computer’s stub resolver asks a recursive resolver to find the answer. If it has no cached information, that resolver asks the root, then the TLD, and finally the authoritative server. Recursive means “find the answer for me,” while iterative means “give me an answer or tell me where to ask next.” My computer or the resolver may already have a saved answer. The resolver can also remember where to ask, so it often skips the root. DNS usually uses UDP because it avoids setting up a connection for a small request. If the reply is too large and gets cut short, it can retry with TCP._
 
 ### Q3. Record types: A, AAAA, CNAME, MX, TXT, NS, SOA, PTR. What is each for, and what's one support ticket where each one is the answer? What does a CNAME chain do to debugging, why are CNAMEs so common in front of CDNs and SaaS products, and why can't one sit at a domain's apex? What does a PTR record prove, and what doesn't it?
 
-_Your answer:_
+_Answer: A gives an IPv4 address; I would check it if a website opens the wrong server. AAAA gives an IPv6 address; I would check it if the site fails only when using IPv6. CNAME points one name to another; I would check it if my custom domain does not open the service it should. MX tells email where to go; I would check it if a company stops receiving emails. TXT can hold domain-verification or email-security information; I would check it if a service cannot confirm that I control my domain. NS identifies the servers responsible for a zone; I would check it if the domain still uses the old DNS provider after a change. SOA contains the zone's version and timing settings; I would compare its version numbers if one DNS server seems to have older information than another. PTR gives a name for an IP address; I would check it if a mail server rejects emails because the sending IP has no reverse name._
+
+_A CNAME chain means following several names, so there are more places to check for problems. CDNs and SaaS services use CNAMEs so they can change their IP addresse without customers updating theirs. A normal CNAME cannot go at the domain’s root because it cannot share that name with the required NS and SOA records. A PTR only shows the configured reverse name; it does not prove that a server is trustworthy._
 
 ### Q4. What is a TTL, who sets it, and which layers cache an answer for that long (all of them, between your Python process and the authoritative server)? Why is "DNS propagation" really TTL expiry, why does the TTL you see count down, how should a team plan a DNS change, and why might a long-running process never pick up a new address at all?
 
-_Your answer:_
+_Answer: TTL tells a cache how long it can keep a DNS record before checking again. The person managing the zone sets it. An application, the operating system, a router, or a recursive resolver may cache answers, although not all of them do, and some applications use their own rules. The TTL counts down as the saved answer gets older. “DNS propagation” usually means waiting for old answers to expire, though the DNS servers also need to be updated. Before a change, lower the TTL early enough for the old TTL to expire, then make and test the change. A program that keeps an old IP or an open connection may not look up the name again._
 
 ### Q5. Distinguish NXDOMAIN, NOERROR with no answer (NODATA), SERVFAIL, REFUSED, and no response at all (timeout), and say which component each implicates. What is negative caching, where does its duration come from (the SOA record), and why does a just-created name keep failing for a while? How do "the name is wrong" and "the resolver is unreachable" look different from Python, and in how long they take to fail?
 
-_Your answer:_
+_Answer: NXDOMAIN means the name does not exist. NODATA means the name exists but has no record of the type I asked for; the response code is NOERROR. For these missing answers, I would check the name and the records set up for it. SERVFAIL means the DNS server could not finish the lookup. REFUSED means it would not answer because of its rules. A timeout means no answer arrived in time, possibly because of a network, firewall, or server problem._
+
+_Negative caching means remembering that a name or record was missing. The cache time comes from the smaller of two values in the SOA record: its TTL and MINIMUM field. That is why a new name can still appear missing for a while. In Python, these failures can raise `socket.gaierror`. A missing name can appear as EAI_NONAME, while a temporary lookup failure can appear as EAI_AGAIN. The exact codes depend on the operating system. In our Windows task 5 results, the missing name returned 11001, and the temporary failure returned 11002. A temporary error alone does not prove the resolver is unreachable. A missing name may fail quickly, while an unreachable resolver often takes longer because the computer waits and retries._
 
 ## Part B — Where resolution is configured, and how it disagrees with itself
 
 ### Q6. Where does the hosts file live on macOS/Linux and on Windows, why is it consulted before DNS, and why is it both a favorite debugging trick and a classic cause of "works on my machine"? Is `localhost` a DNS name? Name one kind of software that edits your hosts file without asking.
 
-_Your answer:_
+_Answer: The hosts file is at `/etc/hosts` on macOS and Linux, and normally at `C:\Windows\System32\drivers\etc\hosts` on Windows. The system usually checks these local entries before asking DNS. I can use it to point a name to a test server, but that change only affects my computer. This can explain “it works on my machine.” `localhost` is a special name for my own computer and should be handled locally, without asking public DNS. Malware with enough permissions can change the hosts file without telling me._
 
 ### Q7. What do `nameserver`, `search`, `ndots`, and `timeout` do in `resolv.conf`? Use search domains to explain why `db` resolves on one machine and not another, and what `ndots:5` (Kubernetes' default) does to a lookup for `api.github.com`. Why is `/etc/resolv.conf` on macOS mostly a decoy, and where does Windows keep the same settings?
 
-_Your answer:_
+_Answer: In `resolv.conf`, `nameserver` says which DNS server to ask, `search` lists endings to try after a name, `ndots` helps decide whether to try those endings first, and `timeout` controls how long to wait for a reply before retrying. For example, one computer may turn `db` into `db.company.com`, while another does not know that ending. With `ndots:5`, `api.github.com` normally gets search endings tried first because it has fewer than five dots. Adding a final dot avoids that._
+
+_On macOS, this file does not show the whole DNS setup; `scutil --dns` gives a fuller view. Windows keeps similar settings in its network configuration, including settings supplied by DHCP or a VPN._
 
 ### Q8. Why does the same name resolve to a private address on the VPN and to a public address (or nothing) off it (split-horizon)? Where does a container's `/etc/resolv.conf` come from, what is Docker's embedded resolver at `127.0.0.11`, and why is "it works on my laptop but not in the container" so often a DNS story?
 
-_Your answer:_
+_Answer: A VPN can make my computer use an internal DNS server. That server may return a private IP, while public DNS returns a public IP or no answer. This is called split-horizon DNS. Docker prepares the container’s DNS settings using the host settings and any options provided. On custom Docker networks, `127.0.0.11` is Docker’s built-in DNS resolver. It finds container names and forwards other requests. Something may work on my laptop but fail in a container because they use different DNS settings, or because the container cannot reach the VPN’s DNS server_
 
 ### Q9. Why can `dig` (or `nslookup`) and your application get different answers for the same name at the same moment? Contrast asking a DNS server directly with `getaddrinfo()`'s whole OS policy, then add the browser's own cache and DNS-over-HTTPS. When a customer says "DNS is fine, I checked," what exactly did they check?
 
-_Your answer:_
+_Answer: `dig` and `nslookup` normally ask a DNS server directly. My application may use `getaddrinfo()`, which follows the computer’s settings and can use the hosts file, caches, and search domains. A browser may also have its own cache or use a different server through DNS-over-HTTPS. That is why they can disagree. If someone says “DNS is fine,” I would ask which name and record type they checked, which tool and server they used, and whether they were on the same network or VPN as the application_
 
 ### Q10. (Tie-back to Weeks 1, 5, 6, and 9.) Trace `socket.getaddrinfo("www.github.com", 443)` out and back: the config files the OS reads (Week 6), the process that actually does the lookup (Week 5), the UDP packet to port 53 and its ephemeral source port (Week 9), each cache that could answer instead, the CNAME, and the tuples that come back. Put a rough cost on each tier against Week 1's latency table, then name one realistic way each step fails.
 
-_Your answer:_
+_Answer: When I run `socket.getaddrinfo("www.github.com", 443)`, Python asks the operating system for possible addresses. It does not connect to the website yet. On Linux, the system may use `/etc/hosts`, `/etc/nsswitch.conf`, and `/etc/resolv.conf`; Windows and macOS use their own settings. The lookup may happen inside the Python process or through a system DNS service. Windows uses the DNS Client service, and macOS uses mDNSResponder._
+
+_A local entry or cache may answer first. Otherwise, a normal DNS request goes from a temporary source port to the resolver’s port 53, usually using UDP. The resolver checks its cache and asks other DNS servers if needed. If it receives a CNAME, it follows that name to find the address. Python returns tuples containing the address family, socket type, protocol, canonical name if requested, and an address containing the IP and port_
+
+_Using the rough examples from our lessons, reading RAM takes about 100 nanoseconds. A lookup answered by the OS cache may take around 1 millisecond, a reply from the recursive resolver cache around 35 milliseconds, and a full lookup around 300 milliseconds. These are reference values, not fixed times or new measurements. A full lookup can take longer because it needs several requests. Retries can take seconds. Problems include incorrect settings, an old cached address, a stopped DNS service, blocked packets, an unavailable DNS server, or a CNAME pointing to a missing name_
