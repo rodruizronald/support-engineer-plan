@@ -29,4 +29,39 @@ ticket started as that nibble.
 """
 
 # TODO: implement this task.
-print("Task 6 — not implemented yet. Hand-build a DNS query and read the reply!")
+import random
+import socket
+import struct
+
+for name in ("example.com", "does-not-exist.python.org"):
+    query_id = random.randrange(65536)
+    header = struct.pack("!HHHHHH", query_id, 0x0100, 1, 0, 0, 0)
+    question = b""
+    for label in name.split("."):
+        encoded = label.encode("ascii")
+        question += bytes([len(encoded)]) + encoded
+    question += b"\x00" + struct.pack("!HH", 1, 1)
+    query = header + question
+    print("\nName:", name, "Query bytes:", len(query))
+
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as connection:
+            connection.settimeout(2)
+            connection.sendto(query, ("8.8.8.8", 53))
+            reply, sender = connection.recvfrom(4096)
+        if sender != ("8.8.8.8", 53) or len(reply) < 12:
+            print("Unexpected reply")
+            continue
+        reply_id, flags, questions, answers, authority, additional = struct.unpack("!HHHHHH", reply[:12])
+        if reply_id != query_id or not flags & 0x8000:
+            print("Reply does not match the query")
+            continue
+        print("ID matches:", reply_id == query_id)
+        print(f"Flags: {flags:04x}")
+        print("Answers:", answers)
+        print("RCODE:", flags & 0x000F)
+        print("Hex:", reply.hex(" "))
+    except OSError as error:
+        print(type(error).__name__, str(error))
+
+# I learned that a DNS lookup sends bytes, and the reply contains answers or an error code.

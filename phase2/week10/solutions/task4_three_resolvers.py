@@ -28,4 +28,33 @@ Things to look for, all seen on a real run:
 """
 
 # TODO: implement this task.
-print("Task 4 — not implemented yet. Ask three resolvers and watch their TTLs!")
+import time
+import dns.resolver
+import dns.exception
+
+resolvers = {"System": dns.resolver.Resolver()}
+for address in ("8.8.8.8", "1.1.1.1"):
+    resolver = dns.resolver.Resolver(configure=False)
+    resolver.nameservers = [address]
+    resolvers[address] = resolver
+
+for round_number in range(2):
+    print("\nRound:", round_number + 1)
+    for name in ("github.com", "www.microsoft.com"):
+        for label, resolver in resolvers.items():
+            start = time.perf_counter()
+            try:
+                answer = resolver.resolve(name, "A", lifetime=3)
+                elapsed = (time.perf_counter() - start) * 1000
+                print(name, label)
+                print("Addresses:", sorted(str(record) for record in answer))
+                print("TTL:", answer.rrset.ttl)
+                print("Canonical name:", answer.canonical_name)
+                print(f"Time: {elapsed:.2f} ms")
+            except dns.exception.DNSException as error:
+                elapsed = (time.perf_counter() - start) * 1000
+                print(name, label, type(error).__name__, f"{elapsed:.2f} ms")
+    if round_number == 0:
+        time.sleep(5)
+
+# I learned that DNS servers can return different addresses and different remaining cache times.

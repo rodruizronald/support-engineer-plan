@@ -33,4 +33,32 @@ and find your sslip.io name sitting in the OS cache with its TTL counting down.
 """
 
 # TODO: implement this task.
-print("Task 2 — not implemented yet. Time a cold lookup, a warm one, and a cached failure!")
+import socket
+import time
+import uuid
+
+names = [
+    f"w10-{uuid.uuid4().hex[:8]}.127-0-0-1.sslip.io",
+    "www.wikipedia.org",
+    f"{uuid.uuid4().hex[:8]}.python.org",
+]
+
+for name in names:
+    print("\nName:", name)
+    for attempt in range(5):
+        start = time.perf_counter()
+        try:
+            results = socket.getaddrinfo(name, 443)
+            result = sorted({item[4][0] for item in results})
+        except socket.gaierror as error:
+            result = str(error)
+        elapsed = (time.perf_counter() - start) * 1000
+        print(f"Lookup {attempt + 1}: {elapsed:.3f} ms", result)
+
+"""
+The new name took 518 ms at first, then about 0.3 ms.
+Wikipedia took 56 ms at first, then less than 1 ms.
+The missing name stayed around 50 ms.
+Repeating successful lookups was faster because of caching.
+Even 0.3 ms is about 3,000 times longer than the 100 ns RAM example from Week 1.
+"""

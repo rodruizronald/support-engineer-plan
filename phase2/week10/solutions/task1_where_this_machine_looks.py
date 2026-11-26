@@ -35,4 +35,53 @@ localhost internally — same answer, different mechanism.
 """
 
 # TODO: implement this task.
-print("Task 1 — not implemented yet. Compare what your program gets with what DNS says!")
+import sys
+import socket
+import dns.resolver
+import dns.exception
+
+hosts_path = "/etc/hosts"
+if sys.platform == "win32":
+    hosts_path = r"C:\Windows\System32\drivers\etc\hosts"
+
+names = ["localhost", "example.com"]
+print("Hosts file:", hosts_path)
+with open(hosts_path) as hosts_file:
+    for line in hosts_file:
+        line = line.split("#", 1)[0].strip()
+        if line:
+            print(line)
+            for name in line.split()[1:]:
+                if name not in names:
+                    names.append(name)
+
+system = dns.resolver.Resolver()
+print("\nSystem DNS servers:", system.nameservers)
+print("Search domains:", [str(domain) for domain in system.search])
+
+public = dns.resolver.Resolver(configure=False)
+public.nameservers = ["8.8.8.8"]
+public.lifetime = 3
+
+for name in names:
+    print("\nName:", name)
+    try:
+        addresses = set()
+        for result in socket.getaddrinfo(name, 443):
+            addresses.add(result[4][0])
+        print("Application:", sorted(addresses))
+    except socket.gaierror as error:
+        print("Application error:", error)
+
+    for record_type in ("A", "AAAA"):
+        try:
+            answer = public.resolve(name, record_type, search=False)
+            print("8.8.8.8", record_type, [str(record) for record in answer])
+        except dns.resolver.NXDOMAIN:
+            print("8.8.8.8", record_type, "NXDOMAIN: name does not exist")
+        except dns.resolver.NoAnswer:
+            print("8.8.8.8", record_type, "NoAnswer: no records of this type")
+        except dns.exception.DNSException as error:
+            print("8.8.8.8", record_type, type(error).__name__, str(error))
+
+# I learned that my computer and public DNS can give different answers for the same name.
